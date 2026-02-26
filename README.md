@@ -9,7 +9,7 @@ A Windows-Explorer-style breadcrumb navigation bar for **WinUI 3 / Windows App S
 
 ---
 ## Why?
-The default Breadcrumb Bar available in Windows App SDK is one of the most overlooked and underdeveloped component in the whole SDK, even though a breadcrumb bar might be really usefule creating apps that need an Explorer-like navigation. Just think: the WinApp SDK component just shows paths segments but it is really far from what it can do in Windows Explorer, like showing subfolders by clicking the chevron. Well BBB does this and much more.
+The default Breadcrumb Bar available in Windows App SDK is one of the most underdeveloped component in the whole SDK, even though a breadcrumb bar might be really useful creating apps that need an Explorer-like navigation. Just think: the WinApp SDK component just shows paths segments but it is really far from what it can do in Windows Explorer, like showing subfolders by clicking the chevron. Well BBB does this and much more.
 
 Just a note: this entire solution, the component and the demo app have been generated **entirely with Claude AI**. I just supervised and tested what Claude was generating.
 
