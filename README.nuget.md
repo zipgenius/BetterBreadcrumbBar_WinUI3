@@ -1,9 +1,9 @@
 # BetterBreadcrumbBar for WinUI 3
 
 **Author:** Matteo Riso — [zipgenius.it](https://zipgenius.it)
-**Version:** 0.8.0 · Written with Claude AI · [MIT License](LICENSE)
+**Version:** 0.8.6 · Written with Claude AI · [MIT License](LICENSE)
 
-A Windows-Explorer-style breadcrumb navigation bar for **WinUI 3 / Windows App SDK**.
+A Windows-Explorer-style breadcrumb navigation bar for **WinUI 3 / Windows App SDK**, definitely better than the officia WinApp SDK Breadcrumb bar.
 
 ## Features
 
