@@ -6,13 +6,13 @@
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     mc:Ignorable="d"
-    Title="BetterBreadcrumbBar Demo v0.8.6">
+    Title="BetterBreadcrumbBar Demo v0.8.7">
 
     <Grid RowDefinitions="Auto,*" Margin="16" RowSpacing="12">
 
         <!-- Header -->
         <StackPanel Grid.Row="0">
-            <TextBlock Text="BetterBreadcrumbBar — Demo v0.8.6"
+            <TextBlock Text="BetterBreadcrumbBar — Demo v0.8.7"
                        Style="{StaticResource TitleTextBlockStyle}"/>
             <TextBlock
                 Text="Click a segment to navigate · Click a chevron to browse siblings · Click the bar to type a path"
