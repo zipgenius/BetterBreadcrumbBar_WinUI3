@@ -9,6 +9,10 @@ A Windows-Explorer-style breadcrumb navigation bar for **WinUI 3 / Windows App S
 
 ---
 
+
+https://github.com/user-attachments/assets/b79f1ed0-f39f-47b1-888b-8c86d8ebfbe2
+
+
 ## Features
 
 - **Clickable path segments** — each segment is a button that raises `SegmentClicked`
