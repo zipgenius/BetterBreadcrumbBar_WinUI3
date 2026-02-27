@@ -6,13 +6,13 @@
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     mc:Ignorable="d"
-    Title="BetterBreadcrumbBar Demo v0.8.7">
+    Title="BetterBreadcrumbBar Demo v0.9.0">
 
     <Grid RowDefinitions="Auto,*" Margin="16" RowSpacing="12">
 
         <!-- Header -->
         <StackPanel Grid.Row="0">
-            <TextBlock Text="BetterBreadcrumbBar — Demo v0.8.7"
+            <TextBlock Text="BetterBreadcrumbBar — Demo v0.9.0"
                        Style="{StaticResource TitleTextBlockStyle}"/>
             <TextBlock
                 Text="Click a segment to navigate · Click a chevron to browse siblings · Click the bar to type a path"
@@ -46,7 +46,8 @@
                             BackRequested="FsBreadcrumb_BackRequested"
                             UpRequested="FsBreadcrumb_UpRequested"
                             HomeRequested="FsBreadcrumb_HomeRequested"
-                            PathSubmitted="FsBreadcrumb_PathSubmitted">
+                            PathSubmitted="FsBreadcrumb_PathSubmitted"
+                            ContextMenuItemClicked="FsBreadcrumb_ContextMenuItemClicked">
                             <ctrl:BetterBreadcrumbBar.LeadingIcon>
                                 <SymbolIcon x:Name="FsLeadingIcon" Symbol="Folder"/>
                             </ctrl:BetterBreadcrumbBar.LeadingIcon>
@@ -138,7 +139,8 @@
                             BackRequested="ZipBreadcrumb_BackRequested"
                             UpRequested="ZipBreadcrumb_UpRequested"
                             HomeRequested="ZipBreadcrumb_HomeRequested"
-                            PathSubmitted="ZipBreadcrumb_PathSubmitted">
+                            PathSubmitted="ZipBreadcrumb_PathSubmitted"
+                            ContextMenuItemClicked="ZipBreadcrumb_ContextMenuItemClicked">
                             <ctrl:BetterBreadcrumbBar.LeadingIcon>
                                 <FontIcon x:Name="ZipLeadingIcon" Glyph="&#xE8B7;" FontSize="14"/>
                             </ctrl:BetterBreadcrumbBar.LeadingIcon>
@@ -371,11 +373,11 @@
                                         <LineBreak/><LineBreak/>
                                         <Run Text="// Back button — host manages history"/>
                                         <LineBreak/>
-                                        <Run Text="breadcrumb.BackRequested += (s, e) =&gt;{"/>
+                                        <Run Text="breadcrumb.BackRequested += (s, e) =&gt; {"/>
                                         <LineBreak/>
-                                        <Run Text="  breadcrumb.SetPath(…)"/>
+                                        <Run Text="    breadcrumb.SetPath(…);"/>
                                         <LineBreak/>
-                                        <Run Text="  breadcrumb.CanGoBack = history.Count &gt; 0; };"/>
+                                        <Run Text="    breadcrumb.CanGoBack = history.Count &gt; 0; };"/>
                                         <LineBreak/><LineBreak/>
                                         <Run Text="// Up button — parent node supplied by the control"/>
                                         <LineBreak/>
@@ -392,12 +394,89 @@
                                 </StackPanel>
                             </Border>
 
-                            <!-- 5. Property / event reference -->
+                            <!-- 5. Right-click context menu -->
                             <Border Background="{ThemeResource LayerFillColorDefaultBrush}"
                                     BorderBrush="{ThemeResource ControlStrokeColorDefaultBrush}"
                                     BorderThickness="1" CornerRadius="6" Padding="12">
                                 <StackPanel Spacing="8">
-                                    <TextBlock Text="5. Property &amp; event reference"
+                                    <TextBlock Text="5. Right-click context menu"
+                                               Style="{StaticResource BodyStrongTextBlockStyle}"/>
+                                    <TextBlock TextWrapping="Wrap" FontSize="12"
+                                               Foreground="{ThemeResource TextFillColorSecondaryBrush}">
+                                        Right-clicking anywhere on the bar — segments, chevrons, leading icon,
+                                        overflow button, nav buttons, or any empty area — opens the context menu.
+                                        On segments and chevrons the Node reflects the specific item clicked;
+                                        on empty areas it reflects the current (last) node.
+                                        Two built-in items are always present: Copy path as text (writes to
+                                        clipboard automatically) and Paste and go (host must read clipboard).
+                                        Add custom items via the ContextMenuItems collection.
+                                    </TextBlock>
+                                    <TextBlock FontFamily="Consolas" FontSize="12" TextWrapping="Wrap">
+                                        <Run Text="// XAML — add custom items and localise built-in labels"/>
+                                        <LineBreak/>
+                                        <Run Text="&lt;bbb:BetterBreadcrumbBar"/>
+                                        <LineBreak/>
+                                        <Run Text="    CopyPathMenuText=&quot;Copy path&quot;"/>
+                                        <LineBreak/>
+                                        <Run Text="    PasteAndGoMenuText=&quot;Paste and navigate&quot;"/>
+                                        <LineBreak/>
+                                        <Run Text="    ContextMenuItemClicked=&quot;OnContextMenu&quot;&gt;"/>
+                                        <LineBreak/>
+                                        <Run Text="  &lt;bbb:BetterBreadcrumbBar.ContextMenuItems&gt;"/>
+                                        <LineBreak/>
+                                        <Run Text="    &lt;bbb:BreadcrumbContextMenuItem"/>
+                                        <LineBreak/>
+                                        <Run Text="        Text=&quot;Open in Terminal&quot; Tag=&quot;terminal&quot;/&gt;"/>
+                                        <LineBreak/>
+                                        <Run Text="    &lt;bbb:BreadcrumbContextMenuItem"/>
+                                        <LineBreak/>
+                                        <Run Text="        Text=&quot;Open in Explorer&quot; Tag=&quot;explorer&quot;/&gt;"/>
+                                        <LineBreak/>
+                                        <Run Text="  &lt;/bbb:BetterBreadcrumbBar.ContextMenuItems&gt;"/>
+                                        <LineBreak/>
+                                        <Run Text="&lt;/bbb:BetterBreadcrumbBar&gt;"/>
+                                        <LineBreak/><LineBreak/>
+                                        <Run Text="// C# — handle all menu clicks in one place"/>
+                                        <LineBreak/>
+                                        <Run Text="private async void OnContextMenu("/>
+                                        <LineBreak/>
+                                        <Run Text="    object s, BreadcrumbContextMenuItemClickedEventArgs e)"/>
+                                        <LineBreak/>
+                                        <Run Text="{}{}"/>
+                                        <LineBreak/>
+                                        <Run Text="    if (e.IsCopyPath) return; // already on clipboard"/>
+                                        <LineBreak/>
+                                        <Run Text="    if (e.IsPasteAndGo) {"/>
+                                        <LineBreak/>
+                                        <Run Text="        var t = await Clipboard.GetContent().GetTextAsync();"/>
+                                        <LineBreak/>
+                                        <Run Text="        NavigateTo(t); return; }"/>
+                                        <LineBreak/>
+                                        <Run Text="    // custom items — e.Path is the right-clicked path"/>
+                                        <LineBreak/>
+                                        <Run Text="    switch (e.ItemTag as string) {"/>
+                                        <LineBreak/>
+                                        <Run Text="        case &quot;terminal&quot;:"/>
+                                        <LineBreak/>
+                                        <Run Text="            Process.Start(&quot;wt.exe&quot;, $&quot;-d \&quot;{e.Path}\&quot;&quot;);"/>
+                                        <LineBreak/>
+                                        <Run Text="            break;"/>
+                                        <LineBreak/>
+                                        <Run Text="        case &quot;explorer&quot;:"/>
+                                        <LineBreak/>
+                                        <Run Text="            Process.Start(&quot;explorer.exe&quot;, $&quot;\&quot;{e.Path}\&quot;&quot;);"/>
+                                        <LineBreak/>
+                                        <Run Text="            break; } }"/>
+                                    </TextBlock>
+                                </StackPanel>
+                            </Border>
+
+                            <!-- 6. Property / event reference -->
+                            <Border Background="{ThemeResource LayerFillColorDefaultBrush}"
+                                    BorderBrush="{ThemeResource ControlStrokeColorDefaultBrush}"
+                                    BorderThickness="1" CornerRadius="6" Padding="12">
+                                <StackPanel Spacing="8">
+                                    <TextBlock Text="6. Property &amp; event reference"
                                                Style="{StaticResource BodyStrongTextBlockStyle}"/>
                                     <TextBlock Text="Properties" FontWeight="SemiBold" FontSize="12"/>
                                     <TextBlock TextWrapping="Wrap" FontSize="12">
@@ -411,16 +490,28 @@
                                         <Run Text="UpButtonTooltip        " FontFamily="Consolas"/><Run Text="string — customisable tooltip for Up"/><LineBreak/>
                                         <Run Text="HomeButtonTooltip      " FontFamily="Consolas"/><Run Text="string — customisable tooltip for Home"/><LineBreak/>
                                         <Run Text="CanGoBack              " FontFamily="Consolas"/><Run Text="bool — set by host to enable/disable Back"/><LineBreak/>
-                                        <Run Text="CurrentPath            " FontFamily="Consolas"/><Run Text="string (read-only) — full path of the current node"/>
+                                        <Run Text="CurrentPath            " FontFamily="Consolas"/><Run Text="string (read-only) — full path of the current node"/><LineBreak/>
+                                        <Run Text="ContextMenuItems       " FontFamily="Consolas"/><Run Text="ObservableCollection — custom right-click items"/><LineBreak/>
+                                        <Run Text="CopyPathMenuText       " FontFamily="Consolas"/><Run Text="string — label for built-in Copy item"/><LineBreak/>
+                                        <Run Text="PasteAndGoMenuText     " FontFamily="Consolas"/><Run Text="string — label for built-in Paste item"/>
                                     </TextBlock>
                                     <TextBlock Text="Events" FontWeight="SemiBold" FontSize="12" Margin="0,6,0,0"/>
                                     <TextBlock TextWrapping="Wrap" FontSize="12">
-                                        <Run Text="SegmentClicked  " FontFamily="Consolas"/><Run Text="PathNodeEventArgs — segment clicked"/><LineBreak/>
-                                        <Run Text="NodeSelected    " FontFamily="Consolas"/><Run Text="PathNodeEventArgs — item chosen from chevron menu"/><LineBreak/>
-                                        <Run Text="PathSubmitted   " FontFamily="Consolas"/><Run Text="PathSubmittedEventArgs — path typed in address bar"/><LineBreak/>
-                                        <Run Text="BackRequested   " FontFamily="Consolas"/><Run Text="EventArgs — Back clicked"/><LineBreak/>
-                                        <Run Text="UpRequested     " FontFamily="Consolas"/><Run Text="PathNodeEventArgs (parent) — Up clicked"/><LineBreak/>
-                                        <Run Text="HomeRequested   " FontFamily="Consolas"/><Run Text="EventArgs — Home clicked"/>
+                                        <Run Text="SegmentClicked         " FontFamily="Consolas"/><Run Text="PathNodeEventArgs — segment clicked"/><LineBreak/>
+                                        <Run Text="NodeSelected           " FontFamily="Consolas"/><Run Text="PathNodeEventArgs — item chosen from chevron menu"/><LineBreak/>
+                                        <Run Text="PathSubmitted          " FontFamily="Consolas"/><Run Text="PathSubmittedEventArgs — path typed in address bar"/><LineBreak/>
+                                        <Run Text="BackRequested          " FontFamily="Consolas"/><Run Text="EventArgs — Back clicked"/><LineBreak/>
+                                        <Run Text="UpRequested            " FontFamily="Consolas"/><Run Text="PathNodeEventArgs (parent) — Up clicked"/><LineBreak/>
+                                        <Run Text="HomeRequested          " FontFamily="Consolas"/><Run Text="EventArgs — Home clicked"/><LineBreak/>
+                                        <Run Text="ContextMenuItemClicked " FontFamily="Consolas"/><Run Text="BreadcrumbContextMenuItemClickedEventArgs — any menu item"/>
+                                    </TextBlock>
+                                    <TextBlock Text="BreadcrumbContextMenuItemClickedEventArgs" FontWeight="SemiBold" FontSize="12" Margin="0,6,0,0"/>
+                                    <TextBlock TextWrapping="Wrap" FontSize="12">
+                                        <Run Text="Node        " FontFamily="Consolas"/><Run Text="PathNode — the node that was right-clicked"/><LineBreak/>
+                                        <Run Text="Path        " FontFamily="Consolas"/><Run Text="string — shortcut for Node.FullPath"/><LineBreak/>
+                                        <Run Text="ItemTag     " FontFamily="Consolas"/><Run Text="object? — Tag from BreadcrumbContextMenuItem"/><LineBreak/>
+                                        <Run Text="IsCopyPath  " FontFamily="Consolas"/><Run Text="bool — true for built-in Copy item"/><LineBreak/>
+                                        <Run Text="IsPasteAndGo" FontFamily="Consolas"/><Run Text="bool — true for built-in Paste item"/>
                                     </TextBlock>
                                 </StackPanel>
                             </Border>

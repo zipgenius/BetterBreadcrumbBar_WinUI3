@@ -1,7 +1,7 @@
 // =============================================================================
 // BetterBreadcrumbBar for WinUI 3
 // Author:  Matteo Riso
-// Version: 0.8.7
+// Version: 0.9.0
 // Website: https://zipgenius.it
 // Written with Claude AI
 // License: MIT
@@ -12,6 +12,7 @@ using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Controls.Primitives;
 using Microsoft.UI.Xaml.Input;
 using System.Collections.ObjectModel;
+using Windows.ApplicationModel.DataTransfer;
 
 namespace BetterBreadcrumbBar.Control;
 
@@ -243,6 +244,56 @@ public sealed partial class BetterBreadcrumbBar : UserControl
     /// </summary>
     public bool CanGoUp => _segments.Count > 1;
 
+    // ── Context menu ─────────────────────────────────────────────────────────
+
+    public static readonly DependencyProperty ContextMenuItemsProperty =
+        DependencyProperty.Register(nameof(ContextMenuItems),
+            typeof(ObservableCollection<BreadcrumbContextMenuItem>),
+            typeof(BetterBreadcrumbBar),
+            new PropertyMetadata(null));
+
+    /// <summary>
+    /// Optional collection of custom items appended to the right-click context menu.
+    /// The two built-in items (<em>Copy path as text</em> and <em>Paste and go</em>)
+    /// are always present and cannot be removed; they appear at the top.
+    /// Custom items are shown below a separator.
+    /// </summary>
+    public ObservableCollection<BreadcrumbContextMenuItem> ContextMenuItems
+    {
+        get => (ObservableCollection<BreadcrumbContextMenuItem>)GetValue(ContextMenuItemsProperty);
+        set => SetValue(ContextMenuItemsProperty, value);
+    }
+
+    public static readonly DependencyProperty CopyPathMenuTextProperty =
+        DependencyProperty.Register(nameof(CopyPathMenuText), typeof(string),
+            typeof(BetterBreadcrumbBar),
+            new PropertyMetadata("Copy path as text"));
+
+    /// <summary>
+    /// Text for the built-in <em>Copy path as text</em> context menu item.
+    /// Default: <c>"Copy path as text"</c>.
+    /// </summary>
+    public string CopyPathMenuText
+    {
+        get => (string)GetValue(CopyPathMenuTextProperty);
+        set => SetValue(CopyPathMenuTextProperty, value);
+    }
+
+    public static readonly DependencyProperty PasteAndGoMenuTextProperty =
+        DependencyProperty.Register(nameof(PasteAndGoMenuText), typeof(string),
+            typeof(BetterBreadcrumbBar),
+            new PropertyMetadata("Paste and go"));
+
+    /// <summary>
+    /// Text for the built-in <em>Paste and go</em> context menu item.
+    /// Default: <c>"Paste and go"</c>.
+    /// </summary>
+    public string PasteAndGoMenuText
+    {
+        get => (string)GetValue(PasteAndGoMenuTextProperty);
+        set => SetValue(PasteAndGoMenuTextProperty, value);
+    }
+
     // ── Typography API ────────────────────────────────────────────────────────
     // In WinUI 3, Button's default ControlTemplate sets FontFamily (and other font
     // properties) via local ThemeResource values. This beats both property inheritance
@@ -312,6 +363,19 @@ public sealed partial class BetterBreadcrumbBar : UserControl
     /// </summary>
     public event EventHandler<PathSubmittedEventArgs>? PathSubmitted;
 
+    /// <summary>
+    /// Raised when the user clicks any item in the right-click context menu,
+    /// including the two built-in items (Copy path / Paste and go).
+    /// Use <see cref="BreadcrumbContextMenuItemClickedEventArgs.IsCopyPath"/> and
+    /// <see cref="BreadcrumbContextMenuItemClickedEventArgs.IsPasteAndGo"/> to detect
+    /// the built-in actions; for custom items inspect
+    /// <see cref="BreadcrumbContextMenuItemClickedEventArgs.ItemTag"/>.
+    /// Note: the built-in <em>Copy path</em> action is also handled internally by the control
+    /// (it writes to the clipboard automatically). <em>Paste and go</em> is not handled
+    /// internally — the host must read the clipboard and call <see cref="SetPath(IEnumerable{PathNode})"/>.
+    /// </summary>
+    public event EventHandler<BreadcrumbContextMenuItemClickedEventArgs>? ContextMenuItemClicked;
+
     #endregion
 
     private readonly ObservableCollection<PathSegment> _segments = new();
@@ -359,6 +423,31 @@ public sealed partial class BetterBreadcrumbBar : UserControl
             UpdateLeadingIconArea();
             ApplyFlowDirection(FlowDirection); // apply initial direction (may be set before Loaded)
             ApplyTypography();                 // push font properties to segments and address box
+
+            // Force an arrow cursor on the whole bar so the system never shows the
+            // hourglass/wait cursor that WinUI 3 briefly displays while it decides
+            // whether a right-press is a RightTapped or a press-and-hold.
+            this.ProtectedCursor =
+                Microsoft.UI.Input.InputSystemCursor.Create(
+                    Microsoft.UI.Input.InputSystemCursorShape.Arrow);
+
+            // Suppress the system TextBox context menu that would otherwise appear when
+            // right-clicking inside the AutoSuggestBox while in inline edit mode.
+            // AddHandler with handledEventsToo:true is required because AutoSuggestBox
+            // internally marks RightTapped as handled before it bubbles out.
+            InlineAddressBox.AddHandler(
+                RightTappedEvent,
+                new RightTappedEventHandler(InlineAddressBox_RightTapped),
+                handledEventsToo: true);
+
+            // Register the single right-click handler on RootBorder with handledEventsToo:true.
+            // This ensures the handler fires regardless of whether a child element (Button,
+            // AutoSuggestBox, etc.) has already marked the event as handled internally.
+            // Hit-testing inside RootBorder_RightTapped determines the context node.
+            RootBorder.AddHandler(
+                RightTappedEvent,
+                new RightTappedEventHandler(RootBorder_RightTapped),
+                handledEventsToo: true);
         };
     }
 
@@ -678,6 +767,10 @@ public sealed partial class BetterBreadcrumbBar : UserControl
 
     private void RootBorder_PointerPressed(object sender, PointerRoutedEventArgs e)
     {
+        // Do not enter edit mode on right-click — the context menu handles that.
+        if (e.GetCurrentPoint(null).Properties.IsRightButtonPressed)
+            return;
+
         if (_inEditMode)
         {
             e.Handled = true;
@@ -734,6 +827,14 @@ public sealed partial class BetterBreadcrumbBar : UserControl
             ExitEditMode();
         }
     }
+
+    /// <summary>
+    /// Suppresses the system TextBox context menu (Cut / Copy / Paste / Select all)
+    /// that WinUI 3 shows on right-click inside an AutoSuggestBox.
+    /// We mark the event as handled so the native flyout never appears.
+    /// </summary>
+    private void InlineAddressBox_RightTapped(object sender, RightTappedRoutedEventArgs e)
+        => e.Handled = true;
 
     // ── Last-chevron verification ─────────────────────────────────────────────
 
@@ -1024,6 +1125,157 @@ public sealed partial class BetterBreadcrumbBar : UserControl
             Placement             = placement,
             MenuFlyoutPresenterStyle = style,
         };
+    }
+
+    // ── Context menu ─────────────────────────────────────────────────────────
+    //
+    // A single handler on RootBorder (registered with handledEventsToo:true so it
+    // fires even when Button or AutoSuggestBox mark the event as handled internally).
+    // Hit-testing at the click point determines which node to use as context:
+    //   • segment button  → that segment's node
+    //   • chevron button  → parent node (same logic as the chevron dropdown)
+    //   • leading icon    → first (root) node
+    //   • overflow button → current (last) node
+    //   • empty bar area  → current (last) node
+    //
+    // No per-element RightTapped handlers are needed; this avoids the double-fire
+    // problem that arises when both child handlers and a bubble handler are present.
+
+    /// <summary>
+    /// Single entry point for every right-click on the bar.
+    /// Registered in <see cref="Loaded"/> with <c>handledEventsToo:true</c> so it
+    /// intercepts events consumed by Button and AutoSuggestBox internals.
+    /// </summary>
+    private void RootBorder_RightTapped(object sender, RightTappedRoutedEventArgs e)
+    {
+        if (_inEditMode) return;
+        if (_segments.Count == 0) return;
+
+        var clickPos    = e.GetPosition(RootBorder);
+        PathNode contextNode = ResolveContextNode(clickPos);
+
+        ShowContextMenu(RootBorder, contextNode, clickPos);
+    }
+
+    /// <summary>
+    /// Walks the visual tree at <paramref name="pos"/> (relative to RootBorder) and
+    /// returns the most appropriate <see cref="PathNode"/> for the context menu.
+    /// Falls back to the current (last) node if no more-specific element is hit.
+    /// </summary>
+    private PathNode ResolveContextNode(Windows.Foundation.Point pos)
+    {
+        // Convert to screen coordinates for FindElementsInHostCoordinates.
+        var screenPos = RootBorder.TransformToVisual(null).TransformPoint(pos);
+        var rect      = new Windows.Foundation.Rect(screenPos.X, screenPos.Y, 1, 1);
+
+        var hits = Microsoft.UI.Xaml.Media.VisualTreeHelper
+            .FindElementsInHostCoordinates(rect, RootBorder);
+
+        foreach (var hit in hits)
+        {
+            // Segment button → return that segment's node
+            if (hit is Button segBtn && segBtn.Tag is PathSegment segPs
+                && segBtn.Style == (Style)Resources["SegmentButtonStyle"])
+                return segPs.Node;
+
+            // Chevron/separator button → return parent node
+            if (hit is Button sepBtn && sepBtn.Tag is PathSegment sepPs
+                && sepBtn.Style == (Style)Resources["SeparatorButtonStyle"])
+            {
+                var idx = _segments.IndexOf(sepPs);
+                return (sepPs.IsLast && ShowLastSegmentChevron)
+                    ? sepPs.Node
+                    : (idx <= 0 ? sepPs.Node : _segments[idx - 1].Node);
+            }
+
+            // Leading icon area
+            if (hit is FrameworkElement fe && fe == LeadingIconPresenter)
+                return _segments[0].Node;
+
+            // Overflow button
+            if (hit is Button ovBtn && ovBtn == OverflowButton)
+                return GetCurrentNode() ?? _segments[^1].Node;
+        }
+
+        // Empty area or anything else → current node
+        return GetCurrentNode() ?? _segments[^1].Node;
+    }
+
+    /// <summary>
+    /// Builds and shows the context menu at <paramref name="clickPos"/> (relative to
+    /// <paramref name="anchor"/>). Uses <see cref="FlyoutShowOptions"/> so the flyout
+    /// appears exactly where the user right-clicked rather than at the element's origin.
+    /// </summary>
+    private void ShowContextMenu(FrameworkElement anchor, PathNode contextNode,
+                                 Windows.Foundation.Point clickPos)
+    {
+        var flyout = new MenuFlyout();
+
+        // Placement: drop down from the click point, left-aligned in LTR, right-aligned in RTL.
+        var options = new FlyoutShowOptions
+        {
+            Position  = clickPos,
+            Placement = FlowDirection == FlowDirection.RightToLeft
+                ? FlyoutPlacementMode.BottomEdgeAlignedRight
+                : FlyoutPlacementMode.BottomEdgeAlignedLeft,
+            ShowMode  = FlyoutShowMode.Standard,
+        };
+
+        // ── Built-in: Copy path as text ──────────────────────────────────────
+        var copyItem = new MenuFlyoutItem
+        {
+            Text = CopyPathMenuText,
+            Icon = new FontIcon { Glyph = "\uE8C8" }
+        };
+        copyItem.Click += (_, _) =>
+        {
+            var dp = new DataPackage();
+            dp.SetText(contextNode.FullPath);
+            Clipboard.SetContent(dp);
+            ContextMenuItemClicked?.Invoke(this,
+                new BreadcrumbContextMenuItemClickedEventArgs(contextNode, null, true, false));
+        };
+        flyout.Items.Add(copyItem);
+
+        // ── Built-in: Paste and go ───────────────────────────────────────────
+        var pasteItem = new MenuFlyoutItem
+        {
+            Text = PasteAndGoMenuText,
+            Icon = new FontIcon { Glyph = "\uE77F" }
+        };
+        pasteItem.Click += (_, _) =>
+        {
+            ContextMenuItemClicked?.Invoke(this,
+                new BreadcrumbContextMenuItemClickedEventArgs(contextNode, null, false, true));
+        };
+        flyout.Items.Add(pasteItem);
+
+        // ── Custom items ─────────────────────────────────────────────────────
+        var customItems = ContextMenuItems;
+        if (customItems != null && customItems.Count > 0)
+        {
+            flyout.Items.Add(new MenuFlyoutSeparator());
+            foreach (var custom in customItems)
+            {
+                if (custom.HasSeparatorBefore)
+                    flyout.Items.Add(new MenuFlyoutSeparator());
+
+                var captured = custom;
+                var item = new MenuFlyoutItem
+                {
+                    Text      = custom.Text,
+                    IsEnabled = custom.IsEnabled,
+                    Tag       = custom.Tag
+                };
+                item.Click += (_, _) =>
+                    ContextMenuItemClicked?.Invoke(this,
+                        new BreadcrumbContextMenuItemClickedEventArgs(
+                            contextNode, captured.Tag, false, false));
+                flyout.Items.Add(item);
+            }
+        }
+
+        flyout.ShowAt(anchor, options);
     }
 
     // ── Nav button event handlers ─────────────────────────────────────────────

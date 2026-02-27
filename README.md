@@ -2,16 +2,14 @@
 
 A Windows-Explorer-style breadcrumb navigation bar for **WinUI 3 / Windows App SDK**.
 
-![Version](https://img.shields.io/badge/version-0.8.6-blue)
+![Version](https://img.shields.io/badge/version-0.9.0-blue)
 ![NuGet](https://img.shields.io/nuget/v/BetterBreadcrumbBar.WinUI3)
 ![License](https://img.shields.io/badge/license-MIT-green)
 ![Platform](https://img.shields.io/badge/platform-Windows%2010%2B-lightgrey)
 
 ---
 
-
 https://github.com/user-attachments/assets/b79f1ed0-f39f-47b1-888b-8c86d8ebfbe2
-
 
 ## Features
 
@@ -19,6 +17,7 @@ https://github.com/user-attachments/assets/b79f1ed0-f39f-47b1-888b-8c86d8ebfbe2
 - **Chevron dropdowns** — each separator opens a `MenuFlyout` listing sibling folders; scrollable, capped at 10 visible rows
 - **Inline address bar** — clicking the empty area of the bar switches to an `AutoSuggestBox` with provider-driven autocomplete; confirmed with Enter, dismissed with Escape or a click outside
 - **Overflow management** — when the bar is too narrow to display all segments, a `…` button appears on the left and opens a flyout with the hidden leading segments
+- **Right-click context menu** — right-clicking anywhere on the bar (segments, chevrons, leading icon, overflow button, nav buttons, or any empty area between elements) opens a context menu; the `Node` in the event args reflects the specific element clicked — the segment node, the parent node for chevrons, or the current (last) node for empty areas and nav buttons; two built-in items (*Copy path as text* and *Paste and go*) are always present and label texts are fully localisable
 - **Optional navigation buttons** — Back, Up, and Home buttons can be shown individually, each with a customisable tooltip
 - **Optional leading icon** — accepts any `IconElement` subclass (`SymbolIcon`, `FontIcon`, `BitmapIcon`, `PathIcon`, …)
 - **Full typography support** — `FontFamily`, `FontSize`, `FontWeight`, `FontStyle`, `FontStretch`, `Foreground`, and `CharacterSpacing` are all live-updatable and propagated correctly to every segment button, bypassing WinUI 3's theme override mechanism
@@ -63,7 +62,8 @@ xmlns:bbb="using:BetterBreadcrumbBar.Control"
     PathSubmitted="Breadcrumb_PathSubmitted"
     BackRequested="Breadcrumb_BackRequested"
     UpRequested="Breadcrumb_UpRequested"
-    HomeRequested="Breadcrumb_HomeRequested">
+    HomeRequested="Breadcrumb_HomeRequested"
+    ContextMenuItemClicked="Breadcrumb_ContextMenuItemClicked">
     <bbb:BetterBreadcrumbBar.LeadingIcon>
         <SymbolIcon Symbol="Folder"/>
     </bbb:BetterBreadcrumbBar.LeadingIcon>
@@ -143,7 +143,8 @@ Two ready-to-use providers are included in `BetterBreadcrumbBar.Control.Provider
     PathSubmitted="FsBreadcrumb_PathSubmitted"
     BackRequested="FsBreadcrumb_BackRequested"
     UpRequested="FsBreadcrumb_UpRequested"
-    HomeRequested="FsBreadcrumb_HomeRequested">
+    HomeRequested="FsBreadcrumb_HomeRequested"
+    ContextMenuItemClicked="FsBreadcrumb_ContextMenuItemClicked">
     <bbb:BetterBreadcrumbBar.LeadingIcon>
         <SymbolIcon Symbol="Folder"/>
     </bbb:BetterBreadcrumbBar.LeadingIcon>
@@ -187,22 +188,18 @@ public sealed partial class MainWindow : Window
         FsBreadcrumb.SetPath(FileSystemPathProvider.BuildPathNodes(path));
     }
 
-    // User clicked a segment label
     private void FsBreadcrumb_SegmentClicked(object s, PathNodeEventArgs e)
         => Navigate(e.Node.FullPath);
 
-    // User chose an item from a chevron dropdown
     private void FsBreadcrumb_NodeSelected(object s, PathNodeEventArgs e)
         => Navigate(e.Node.FullPath);
 
-    // User typed a path in the inline address bar and pressed Enter
     private void FsBreadcrumb_PathSubmitted(object s, PathSubmittedEventArgs e)
     {
         if (Directory.Exists(e.Path))
             Navigate(e.Path);
     }
 
-    // Back button
     private void FsBreadcrumb_BackRequested(object s, EventArgs e)
     {
         if (_history.Count == 0) return;
@@ -212,13 +209,23 @@ public sealed partial class MainWindow : Window
         FsBreadcrumb.SetPath(prev);
     }
 
-    // Up button — PathNodeEventArgs.Node is already the parent node
     private void FsBreadcrumb_UpRequested(object s, PathNodeEventArgs e)
         => Navigate(e.Node.FullPath);
 
-    // Home button
     private void FsBreadcrumb_HomeRequested(object s, EventArgs e)
         => Navigate(@"C:\Users");
+
+    private async void FsBreadcrumb_ContextMenuItemClicked(
+        object s, BreadcrumbContextMenuItemClickedEventArgs e)
+    {
+        if (e.IsPasteAndGo)
+        {
+            var text = await Clipboard.GetContent().GetTextAsync();
+            if (Directory.Exists(text)) Navigate(text);
+        }
+        // IsCopyPath: clipboard already written by the control — react only if needed
+        // Custom items: inspect e.ItemTag
+    }
 }
 ```
 
@@ -230,8 +237,6 @@ public sealed partial class MainWindow : Window
 using BetterBreadcrumbBar.Control;
 using BetterBreadcrumbBar.Control.Providers;
 
-// Build the provider from a flat list of paths (files or folders).
-// VirtualPathProvider.FromPaths() extracts the folder structure automatically.
 string[] entries =
 {
     "src/components/ui/Button.cs",
@@ -244,10 +249,7 @@ string[] entries =
 var (provider, root) = VirtualPathProvider.FromPaths(entries, rootName: "archive.zip");
 ZipBreadcrumb.PathProvider = provider;
 
-// Navigate to the root
 ZipBreadcrumb.SetPath(provider.BuildPathNodes(""));
-
-// Navigate to a sub-folder
 ZipBreadcrumb.SetPath(provider.BuildPathNodes("src/components"));
 ```
 
@@ -264,7 +266,8 @@ ZipBreadcrumb.SetPath(provider.BuildPathNodes("src/components"));
     PathSubmitted="ZipBreadcrumb_PathSubmitted"
     BackRequested="ZipBreadcrumb_BackRequested"
     UpRequested="ZipBreadcrumb_UpRequested"
-    HomeRequested="ZipBreadcrumb_HomeRequested">
+    HomeRequested="ZipBreadcrumb_HomeRequested"
+    ContextMenuItemClicked="ZipBreadcrumb_ContextMenuItemClicked">
     <bbb:BetterBreadcrumbBar.LeadingIcon>
         <FontIcon Glyph="&#xE8B7;" FontSize="14"/>
     </bbb:BetterBreadcrumbBar.LeadingIcon>
@@ -288,11 +291,7 @@ public class FtpPathProvider : IPathProvider
         var listing = await _client.GetListingAsync(node.FullPath, ct);
         return listing
             .Where(e => e.Type == FtpObjectType.Directory)
-            .Select(e => new PathNode
-            {
-                Name     = e.Name,
-                FullPath = e.FullName,
-            });
+            .Select(e => new PathNode { Name = e.Name, FullPath = e.FullName });
     }
 
     public async Task<IEnumerable<string>> GetSuggestionsAsync(
@@ -315,7 +314,60 @@ public class FtpPathProvider : IPathProvider
 
 ---
 
-### Example 4 — Typography and RTL
+### Example 4 — Right-click context menu with custom items
+
+Right-clicking **anywhere on the bar** — a segment, a chevron, the leading icon, the overflow button, a nav button, or any empty area — opens the context menu. The `Node` in the event args reflects what was clicked: the specific segment node, the parent node for a chevron, or the current (last) node for empty areas and nav buttons.
+
+```xml
+<bbb:BetterBreadcrumbBar
+    x:Name="Breadcrumb"
+    PathProvider="{x:Bind Provider}"
+    CopyPathMenuText="Copy path"
+    PasteAndGoMenuText="Paste and navigate"
+    ContextMenuItemClicked="Breadcrumb_ContextMenuItemClicked">
+    <bbb:BetterBreadcrumbBar.ContextMenuItems>
+        <bbb:BreadcrumbContextMenuItem Text="Open in Terminal"  Tag="terminal"/>
+        <bbb:BreadcrumbContextMenuItem Text="Open in Explorer"  Tag="explorer"/>
+        <bbb:BreadcrumbContextMenuItem Text="Add to Favourites" Tag="fav" HasSeparatorBefore="True"/>
+    </bbb:BetterBreadcrumbBar.ContextMenuItems>
+</bbb:BetterBreadcrumbBar>
+```
+
+```csharp
+private async void Breadcrumb_ContextMenuItemClicked(
+    object s, BreadcrumbContextMenuItemClickedEventArgs e)
+{
+    // e.Node   — PathNode that was right-clicked
+    // e.Path   — shortcut for e.Node.FullPath
+    // e.ItemTag — Tag set on BreadcrumbContextMenuItem
+
+    if (e.IsPasteAndGo)
+    {
+        var text = await Clipboard.GetContent().GetTextAsync();
+        if (Directory.Exists(text)) Navigate(text);
+        return;
+    }
+
+    if (e.IsCopyPath) return; // already written to clipboard by the control
+
+    switch (e.ItemTag as string)
+    {
+        case "terminal":
+            Process.Start("wt.exe", $"-d \"{e.Path}\"");
+            break;
+        case "explorer":
+            Process.Start("explorer.exe", $"\"{e.Path}\"");
+            break;
+        case "fav":
+            AddToFavourites(e.Node);
+            break;
+    }
+}
+```
+
+---
+
+### Example 5 — Typography and RTL
 
 ```xml
 <!-- Custom font applied to all segments -->
@@ -335,6 +387,8 @@ public class FtpPathProvider : IPathProvider
     ShowUpButton="True"
     BackButtonTooltip="رجوع"
     UpButtonTooltip="المجلد الأصل"
+    CopyPathMenuText="نسخ المسار"
+    PasteAndGoMenuText="لصق والانتقال"
     SegmentClicked="OnSegmentClicked"
     NodeSelected="OnNodeSelected"/>
 ```
@@ -360,6 +414,9 @@ public class FtpPathProvider : IPathProvider
 | `CanGoBack` | `bool` | `false` | Set by the host to enable or disable the Back button |
 | `CanGoUp` | `bool` | computed | Read-only. `true` when the path has at least two segments |
 | `FlowDirection` | `FlowDirection` | `LeftToRight` | LTR or RTL layout |
+| `ContextMenuItems` | `ObservableCollection<BreadcrumbContextMenuItem>` | `null` | Custom items appended to the right-click menu |
+| `CopyPathMenuText` | `string` | `"Copy path as text"` | Localisable label for the built-in Copy item |
+| `PasteAndGoMenuText` | `string` | `"Paste and go"` | Localisable label for the built-in Paste item |
 
 All standard `Control` typography properties (`FontFamily`, `FontSize`, `FontWeight`, `FontStyle`, `FontStretch`, `Foreground`, `CharacterSpacing`) are fully supported and propagated to every segment.
 
@@ -373,6 +430,7 @@ All standard `Control` typography properties (`FontFamily`, `FontSize`, `FontWei
 | `BackRequested` | `EventArgs` | Back button clicked |
 | `UpRequested` | `PathNodeEventArgs` | Up button clicked; `Node` is the parent |
 | `HomeRequested` | `EventArgs` | Home button clicked |
+| `ContextMenuItemClicked` | `BreadcrumbContextMenuItemClickedEventArgs` | Any context menu item clicked (built-in or custom) |
 
 ### Methods
 
@@ -382,6 +440,31 @@ All standard `Control` typography properties (`FontFamily`, `FontSize`, `FontWei
 | `SetPath(string)` | Convenience overload that parses a Windows filesystem path string |
 | `GetCurrentNode()` | Returns the last (current) `PathNode`, or `null` if empty |
 | `GetParentNode()` | Returns the second-to-last `PathNode`, or `null` if at root |
+
+### BreadcrumbContextMenuItem
+
+```csharp
+public class BreadcrumbContextMenuItem
+{
+    public string  Text               { get; set; }  // Menu item label
+    public object? Tag                { get; set; }  // Forwarded to ContextMenuItemClicked args
+    public bool    IsEnabled          { get; set; }  // Default: true
+    public bool    HasSeparatorBefore { get; set; }  // Draws a separator line above this item
+}
+```
+
+### BreadcrumbContextMenuItemClickedEventArgs
+
+```csharp
+public class BreadcrumbContextMenuItemClickedEventArgs : EventArgs
+{
+    public PathNode Node         { get; }  // Node that was right-clicked
+    public string   Path         { get; }  // Shortcut for Node.FullPath
+    public object?  ItemTag      { get; }  // Tag of the custom item; null for built-in items
+    public bool     IsCopyPath   { get; }  // true for the built-in Copy item
+    public bool     IsPasteAndGo { get; }  // true for the built-in Paste item
+}
+```
 
 ---
 

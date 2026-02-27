@@ -6,6 +6,7 @@ using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Windowing;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
+using Windows.ApplicationModel.DataTransfer;
 
 namespace BetterBreadcrumbBar.Demo;
 
@@ -183,6 +184,25 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
         Log(FsEventLog, @"[Home] → C:\Users");
         NavigateFilesystem(@"C:\Users");
     }
+    private async void FsBreadcrumb_ContextMenuItemClicked(object s, BreadcrumbContextMenuItemClickedEventArgs e)
+    {
+        if (e.IsCopyPath)
+        {
+            Log(FsEventLog, $"[Copy path] {e.Path}");
+            return;
+        }
+        if (e.IsPasteAndGo)
+        {
+            try
+            {
+                var dp   = Clipboard.GetContent();
+                var text = await dp.GetTextAsync();
+                Log(FsEventLog, $"[Paste and go] {text}");
+                NavigateFilesystem(text);
+            }
+            catch { Log(FsEventLog, "[Paste and go] clipboard empty or not text"); }
+        }
+    }
     private void FsGoButton_Click(object s, RoutedEventArgs e) => NavigateFilesystem(FsPathInput.Text);
     private void FsPathInput_KeyDown(object s, KeyRoutedEventArgs e)
     {
@@ -238,6 +258,25 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
     {
         Log(ZipEventLog, "[Home] → (root)");
         NavigateZip("");
+    }
+    private async void ZipBreadcrumb_ContextMenuItemClicked(object s, BreadcrumbContextMenuItemClickedEventArgs e)
+    {
+        if (e.IsCopyPath)
+        {
+            Log(ZipEventLog, $"[Copy path] {e.Path}");
+            return;
+        }
+        if (e.IsPasteAndGo)
+        {
+            try
+            {
+                var dp   = Clipboard.GetContent();
+                var text = await dp.GetTextAsync();
+                Log(ZipEventLog, $"[Paste and go] {text}");
+                NavigateZip(text.Trim('/'));
+            }
+            catch { Log(ZipEventLog, "[Paste and go] clipboard empty or not text"); }
+        }
     }
     private void ZipQuickPath_Click(object s, RoutedEventArgs e)
     {

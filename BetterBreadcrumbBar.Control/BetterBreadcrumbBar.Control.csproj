@@ -33,9 +33,9 @@
   <PropertyGroup>
     <!-- Core identity -->
     <PackageId>BetterBreadcrumbBar.WinUI3</PackageId>
-    <Version>0.8.7</Version>
-    <AssemblyVersion>0.8.7.0</AssemblyVersion>
-    <FileVersion>0.8.7.0</FileVersion>
+    <Version>0.9.0</Version>
+    <AssemblyVersion>0.9.0.0</AssemblyVersion>
+    <FileVersion>0.9.0.0</FileVersion>
 
     <!-- Descriptive metadata -->
     <Title>BetterBreadcrumbBar for WinUI 3</Title>
@@ -72,6 +72,14 @@
 
     <!-- Release notes -->
     <PackageReleaseNotes>
+      v0.9.0
+      - Right-click context menu on segments, chevrons, leading icon, and overflow button
+      - Built-in 'Copy path as text' (writes to clipboard) and 'Paste and go' menu items
+      - CopyPathMenuText / PasteAndGoMenuText DPs for localisation
+      - ContextMenuItems DP for extensible custom menu items
+      - ContextMenuItemClicked event with path, node, and item tag
+      - ESC in inline address bar now reliably exits edit mode
+
       v0.8.7
       - Fix: NuGet package Project Website and Source Repository URLs corrected
       - Fix: FindDescendant build error resolved
