@@ -4,6 +4,13 @@ All notable changes to **BetterBreadcrumbBar for WinUI 3** are documented here.
 
 ---
 
+## [0.9.1]
+
+### Changed
+- **Multi-target**: il pacchetto NuGet ora include binari separati per **.NET 8**, **.NET 9** e **.NET 10** (`net8.0-windows10.0.19041.0`, `net9.0-windows10.0.19041.0`, `net10.0-windows10.0.19041.0`).
+
+---
+
 ## [0.9.0]
 
 ### Added

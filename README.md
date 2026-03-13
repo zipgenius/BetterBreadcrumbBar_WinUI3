@@ -2,7 +2,7 @@
 
 A Windows-Explorer-style breadcrumb navigation bar for **WinUI 3 / Windows App SDK**.
 
-![Version](https://img.shields.io/badge/version-0.9.0-blue)
+![Version](https://img.shields.io/badge/version-0.9.1-blue)
 ![NuGet](https://img.shields.io/nuget/v/BetterBreadcrumbBar.WinUI3)
 ![License](https://img.shields.io/badge/license-MIT-green)
 ![Platform](https://img.shields.io/badge/platform-Windows%2010%2B-lightgrey)
@@ -24,7 +24,7 @@ https://github.com/user-attachments/assets/b79f1ed0-f39f-47b1-888b-8c86d8ebfbe2
 - **Right-to-left layout** — set `FlowDirection="RightToLeft"` and the bar layout, chevron glyphs, and flyout placement all adapt automatically; the inline address box stays LTR so file paths always read correctly
 - **PerMonitorV2 Hi-DPI** — declared in `app.manifest`
 - **Provider pattern** — implement `IPathProvider` to connect any data source: local filesystem, ZIP archives, FTP servers, databases, or any virtual hierarchy
-- **Requires** Windows App SDK 1.8+ runtime, .NET 9, Windows 10 1809 (build 17763)+
+- **Requires** Windows App SDK 1.8+ runtime, .NET 8 / 9 / 10, Windows 10 1809 (build 17763)+
 
 ---
 
@@ -486,7 +486,7 @@ public class PathNode
 
 | Requirement | Value |
 |---|---|
-| .NET | 9.0 |
+| .NET | 8.0 · 9.0 · 10.0 |
 | Windows App SDK | 1.8+ |
 | Minimum OS | Windows 10 1809 (build 17763) |
 | Deployment | Unpackaged (`WindowsPackageType=None`) |
