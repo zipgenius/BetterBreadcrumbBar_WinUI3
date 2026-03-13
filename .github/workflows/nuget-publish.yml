@@ -1,0 +1,150 @@
+# ============================================================
+#  BetterBreadcrumbBar.WinUI3 — NuGet build & publish
+#
+#  Triggers:
+#    • Push of a version tag:  git tag v0.9.1 && git push origin v0.9.1
+#    • Manual run from the GitHub Actions UI (workflow_dispatch)
+#
+#  Secrets required for publishing to NuGet.org:
+#    NUGET_API_KEY  — your nuget.org API key
+#                     (Settings → Secrets and variables → Actions → New secret)
+#
+#  If NUGET_API_KEY is not set the workflow still builds and
+#  uploads the .nupkg / .snupkg as a run artifact.
+# ============================================================
+
+name: NuGet — build & publish
+
+on:
+  push:
+    tags:
+      - "v*"          # e.g. v0.9.1
+
+  workflow_dispatch:  # manual trigger from the Actions tab
+    inputs:
+      publish:
+        description: "Publish to NuGet.org?"
+        required: false
+        default: "false"
+        type: choice
+        options:
+          - "true"
+          - "false"
+
+env:
+  DOTNET_NOLOGO:                 true
+  DOTNET_CLI_TELEMETRY_OPTOUT:   true
+  DOTNET_SKIP_FIRST_TIME_EXPERIENCE: true
+  CSPROJ: BetterBreadcrumbBar.Control/BetterBreadcrumbBar.Control.csproj
+
+jobs:
+  build-and-publish:
+    name: Build · Pack · Publish
+    runs-on: windows-latest       # WinUI 3 / Windows App SDK requires Windows
+
+    steps:
+
+      # ── 1. Checkout ──────────────────────────────────────────────────────
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0          # full history (useful for versioning tools)
+
+      # ── 2. Read version from .csproj ─────────────────────────────────────
+      - name: Read package version
+        id: version
+        shell: pwsh
+        run: |
+          [xml]$csproj = Get-Content "$env:CSPROJ"
+          $ver = $csproj.Project.PropertyGroup.Version | Where-Object { $_ } | Select-Object -First 1
+          Write-Output "VERSION=$ver" >> $env:GITHUB_OUTPUT
+          Write-Host "Package version: $ver"
+
+      # ── 3. Setup .NET (all three target frameworks) ───────────────────────
+      - name: Setup .NET 8
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "8.x"
+
+      - name: Setup .NET 9
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "9.x"
+
+      - name: Setup .NET 10
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "10.x"
+
+      # ── 4. Restore ───────────────────────────────────────────────────────
+      - name: Restore NuGet packages
+        shell: pwsh
+        run: dotnet restore "$env:CSPROJ"
+
+      # ── 5. Build (Release, all TFMs) ─────────────────────────────────────
+      - name: Build
+        shell: pwsh
+        run: |
+          dotnet build "$env:CSPROJ" `
+            --configuration Release `
+            --no-restore `
+            /p:TreatWarningsAsErrors=false
+
+      # ── 6. Pack ──────────────────────────────────────────────────────────
+      - name: Pack
+        shell: pwsh
+        run: |
+          dotnet pack "$env:CSPROJ" `
+            --configuration Release `
+            --no-build `
+            --output ./nupkg
+
+      # ── 7. List produced files ───────────────────────────────────────────
+      - name: List package files
+        shell: pwsh
+        run: Get-ChildItem ./nupkg | Select-Object Name, Length
+
+      # ── 8. Upload artifact (always — even if publish is skipped) ─────────
+      - name: Upload NuGet artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: nupkg-${{ steps.version.outputs.VERSION }}
+          path: ./nupkg/*.nupkg
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Upload symbols artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: snupkg-${{ steps.version.outputs.VERSION }}
+          path: ./nupkg/*.snupkg
+          if-no-files-found: warn
+          retention-days: 30
+
+      # ── 9. Publish to NuGet.org ──────────────────────────────────────────
+      #
+      #  Runs when EITHER:
+      #    a) workflow was triggered by a version tag push, OR
+      #    b) workflow_dispatch with publish = "true"
+      #
+      #  Requires the NUGET_API_KEY secret to be configured.
+      - name: Publish to NuGet.org
+        if: |
+          (github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')) ||
+          (github.event_name == 'workflow_dispatch' && github.event.inputs.publish == 'true')
+        shell: pwsh
+        env:
+          NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
+        run: |
+          if (-not $env:NUGET_API_KEY) {
+            Write-Error "NUGET_API_KEY secret is not set. Add it in Settings → Secrets and variables → Actions."
+            exit 1
+          }
+
+          Get-ChildItem ./nupkg/*.nupkg | ForEach-Object {
+            Write-Host "Pushing $($_.Name)..."
+            dotnet nuget push $_.FullName `
+              --api-key $env:NUGET_API_KEY `
+              --source https://api.nuget.org/v3/index.json `
+              --skip-duplicate
+          }
