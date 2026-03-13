@@ -9,8 +9,9 @@
 #    NUGET_API_KEY  — your nuget.org API key
 #                     (Settings → Secrets and variables → Actions → New secret)
 #
-#  If NUGET_API_KEY is not set the workflow still builds and
-#  uploads the .nupkg / .snupkg as a run artifact.
+#  The .nupkg / .snupkg are always uploaded as run artifacts
+#  (downloadable from the Actions tab) regardless of whether
+#  the publish step runs.
 # ============================================================
 
 name: NuGet — build & publish
@@ -18,9 +19,9 @@ name: NuGet — build & publish
 on:
   push:
     tags:
-      - "v*"          # e.g. v0.9.1
+      - "v*"            # e.g. git tag v0.9.1 && git push origin v0.9.1
 
-  workflow_dispatch:  # manual trigger from the Actions tab
+  workflow_dispatch:    # manual trigger from the Actions tab
     inputs:
       publish:
         description: "Publish to NuGet.org?"
@@ -32,15 +33,15 @@ on:
           - "false"
 
 env:
-  DOTNET_NOLOGO:                 true
-  DOTNET_CLI_TELEMETRY_OPTOUT:   true
+  DOTNET_NOLOGO:                     true
+  DOTNET_CLI_TELEMETRY_OPTOUT:       true
   DOTNET_SKIP_FIRST_TIME_EXPERIENCE: true
   CSPROJ: BetterBreadcrumbBar.Control/BetterBreadcrumbBar.Control.csproj
 
 jobs:
   build-and-publish:
     name: Build · Pack · Publish
-    runs-on: windows-latest       # WinUI 3 / Windows App SDK requires Windows
+    runs-on: windows-latest     # WinUI 3 / Windows App SDK requires Windows
 
     steps:
 
@@ -48,7 +49,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0          # full history (useful for versioning tools)
+          fetch-depth: 0
 
       # ── 2. Read version from .csproj ─────────────────────────────────────
       - name: Read package version
@@ -56,9 +57,13 @@ jobs:
         shell: pwsh
         run: |
           [xml]$csproj = Get-Content "$env:CSPROJ"
-          $ver = $csproj.Project.PropertyGroup.Version | Where-Object { $_ } | Select-Object -First 1
-          Write-Output "VERSION=$ver" >> $env:GITHUB_OUTPUT
+          $ver = $csproj.Project.PropertyGroup `
+            | ForEach-Object { $_.Version } `
+            | Where-Object   { $_ } `
+            | Select-Object  -First 1
+          if (-not $ver) { Write-Error "Could not read <Version> from $env:CSPROJ"; exit 1 }
           Write-Host "Package version: $ver"
+          "VERSION=$ver" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
 
       # ── 3. Setup .NET (all three target frameworks) ───────────────────────
       - name: Setup .NET 8
@@ -99,13 +104,17 @@ jobs:
             --no-build `
             --output ./nupkg
 
-      # ── 7. List produced files ───────────────────────────────────────────
+      # ── 7. Show produced files ───────────────────────────────────────────
       - name: List package files
         shell: pwsh
-        run: Get-ChildItem ./nupkg | Select-Object Name, Length
+        run: |
+          Write-Host "=== ./nupkg contents ==="
+          Get-ChildItem ./nupkg | ForEach-Object {
+            Write-Host "$($_.Name)  ($([math]::Round($_.Length/1KB, 1)) KB)"
+          }
 
-      # ── 8. Upload artifact (always — even if publish is skipped) ─────────
-      - name: Upload NuGet artifact
+      # ── 8. Upload artifacts (always) ─────────────────────────────────────
+      - name: Upload .nupkg artifact
         uses: actions/upload-artifact@v4
         with:
           name: nupkg-${{ steps.version.outputs.VERSION }}
@@ -113,7 +122,7 @@ jobs:
           if-no-files-found: error
           retention-days: 30
 
-      - name: Upload symbols artifact
+      - name: Upload .snupkg artifact
         uses: actions/upload-artifact@v4
         with:
           name: snupkg-${{ steps.version.outputs.VERSION }}
@@ -123,11 +132,8 @@ jobs:
 
       # ── 9. Publish to NuGet.org ──────────────────────────────────────────
       #
-      #  Runs when EITHER:
-      #    a) workflow was triggered by a version tag push, OR
-      #    b) workflow_dispatch with publish = "true"
-      #
-      #  Requires the NUGET_API_KEY secret to be configured.
+      #  Condition: tag push  OR  manual dispatch with publish = "true"
+      #  Requires:  NUGET_API_KEY secret
       - name: Publish to NuGet.org
         if: |
           (github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')) ||
@@ -137,14 +143,54 @@ jobs:
           NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
         run: |
           if (-not $env:NUGET_API_KEY) {
-            Write-Error "NUGET_API_KEY secret is not set. Add it in Settings → Secrets and variables → Actions."
+            Write-Error "Secret NUGET_API_KEY is not configured. Add it in: Settings -> Secrets and variables -> Actions -> New repository secret."
             exit 1
           }
 
-          Get-ChildItem ./nupkg/*.nupkg | ForEach-Object {
-            Write-Host "Pushing $($_.Name)..."
-            dotnet nuget push $_.FullName `
-              --api-key $env:NUGET_API_KEY `
-              --source https://api.nuget.org/v3/index.json `
-              --skip-duplicate
+          $pkg = Get-ChildItem ./nupkg/*.nupkg | Select-Object -First 1
+          if (-not $pkg) {
+            Write-Error "No .nupkg found in ./nupkg"
+            exit 1
           }
+          Write-Host "Pushing: $($pkg.Name)"
+
+          dotnet nuget push $pkg.FullName `
+            --api-key      $env:NUGET_API_KEY `
+            --source       https://api.nuget.org/v3/index.json `
+            --skip-duplicate
+
+          if ($LASTEXITCODE -ne 0) {
+            Write-Error "dotnet nuget push failed with exit code $LASTEXITCODE"
+            exit $LASTEXITCODE
+          }
+
+          Write-Host ""
+          Write-Host "Published: https://www.nuget.org/packages/BetterBreadcrumbBar.WinUI3/${{ steps.version.outputs.VERSION }}"
+
+      # ── 10. Job summary ──────────────────────────────────────────────────
+      - name: Write job summary
+        if: always()
+        shell: pwsh
+        run: |
+          $ver     = "${{ steps.version.outputs.VERSION }}"
+          $trigger = "${{ github.event_name }}"
+          $ref     = "${{ github.ref }}"
+          $published = (
+            ($trigger -eq 'push' -and $ref -like 'refs/tags/v*') -or
+            ($trigger -eq 'workflow_dispatch' -and '${{ github.event.inputs.publish }}' -eq 'true')
+          )
+          $pkgs = Get-ChildItem ./nupkg -ErrorAction SilentlyContinue `
+            | ForEach-Object { "- $($_.Name)  ($([math]::Round($_.Length/1KB,1)) KB)" }
+          @"
+          ## BetterBreadcrumbBar.WinUI3 $ver
+
+          | Field | Value |
+          |---|---|
+          | Version | $ver |
+          | Trigger | $trigger |
+          | Ref | $ref |
+          | Published to NuGet.org | $published |
+
+          ### Artifacts
+          $($pkgs -join "`n")
+          "@ | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Encoding utf8
