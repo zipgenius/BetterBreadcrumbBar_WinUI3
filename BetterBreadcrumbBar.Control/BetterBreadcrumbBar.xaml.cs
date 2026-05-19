@@ -1,7 +1,7 @@
 // =============================================================================
 // BetterBreadcrumbBar for WinUI 3
 // Author:  Matteo Riso
-// Version: 0.9.1
+// Version: 0.9.5
 // Website: https://zipgenius.it
 // Written with Claude AI
 // License: MIT
@@ -1038,10 +1038,7 @@ public sealed partial class BetterBreadcrumbBar : UserControl
         segment.IsSeparatorLoading = true;
         try
         {
-            var idx = _segments.IndexOf(segment);
-            PathNode parentNode = (segment.IsLast && ShowLastSegmentChevron)
-                ? segment.Node
-                : (idx <= 0 ? segment.Node : _segments[idx - 1].Node);
+            PathNode parentNode = segment.Node;
 
             IEnumerable<PathNode> children;
             if (parentNode.Children.Count > 0)
@@ -1182,10 +1179,7 @@ public sealed partial class BetterBreadcrumbBar : UserControl
             if (hit is Button sepBtn && sepBtn.Tag is PathSegment sepPs
                 && sepBtn.Style == (Style)Resources["SeparatorButtonStyle"])
             {
-                var idx = _segments.IndexOf(sepPs);
-                return (sepPs.IsLast && ShowLastSegmentChevron)
-                    ? sepPs.Node
-                    : (idx <= 0 ? sepPs.Node : _segments[idx - 1].Node);
+                return sepPs.Node;
             }
 
             // Leading icon area

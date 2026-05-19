@@ -4,10 +4,17 @@ All notable changes to **BetterBreadcrumbBar for WinUI 3** are documented here.
 
 ---
 
+## [0.9.5]
+
+### Fixed
+- The chevron after a segment now always shows the first level of subfolders for the clicked segment, even after navigating into one of those subfolders.
+
+---
+
 ## [0.9.1]
 
 ### Changed
-- **Multi-target**: il pacchetto NuGet ora include binari separati per **.NET 8**, **.NET 9** e **.NET 10** (`net8.0-windows10.0.19041.0`, `net9.0-windows10.0.19041.0`, `net10.0-windows10.0.19041.0`).
+- **Multi-target**: the NuGet package now includes separate binaries for **.NET 8**, **.NET 9**, and **.NET 10** (`net8.0-windows10.0.19041.0`, `net9.0-windows10.0.19041.0`, `net10.0-windows10.0.19041.0`).
 
 ---
 

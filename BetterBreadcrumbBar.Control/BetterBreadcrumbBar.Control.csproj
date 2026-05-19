@@ -33,9 +33,9 @@
   <PropertyGroup>
     <!-- Core identity -->
     <PackageId>BetterBreadcrumbBar.WinUI3</PackageId>
-    <Version>0.9.1</Version>
-    <AssemblyVersion>0.9.1.0</AssemblyVersion>
-    <FileVersion>0.9.1.0</FileVersion>
+    <Version>0.9.5</Version>
+    <AssemblyVersion>0.9.5.0</AssemblyVersion>
+    <FileVersion>0.9.5.0</FileVersion>
 
     <!-- Descriptive metadata -->
     <Title>BetterBreadcrumbBar for WinUI 3</Title>
@@ -72,6 +72,10 @@
 
     <!-- Release notes -->
     <PackageReleaseNotes>
+      v0.9.5
+      - Fix: chevron dropdowns now always list the direct children of the clicked segment,
+        even after navigating into one of those children
+
       v0.9.1
       - Multi-target: now ships binaries for .NET 8, .NET 9, and .NET 10
 
