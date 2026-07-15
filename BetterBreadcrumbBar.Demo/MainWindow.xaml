@@ -6,13 +6,13 @@
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     mc:Ignorable="d"
-    Title="BetterBreadcrumbBar Demo v0.9.5">
+    Title="BetterBreadcrumbBar Demo v0.9.6">
 
     <Grid RowDefinitions="Auto,*" Margin="16" RowSpacing="12">
 
         <!-- Header -->
         <StackPanel Grid.Row="0">
-            <TextBlock Text="BetterBreadcrumbBar — Demo v0.9.5"
+            <TextBlock Text="BetterBreadcrumbBar — Demo v0.9.6"
                        Style="{StaticResource TitleTextBlockStyle}"/>
             <TextBlock
                 Text="Click a segment to navigate · Click a chevron to browse siblings · Click the bar to type a path"
@@ -37,6 +37,8 @@
                             ShowBackButton="{x:Bind FsShowBack, Mode=OneWay}"
                             ShowUpButton="{x:Bind FsShowUp, Mode=OneWay}"
                             ShowHomeButton="{x:Bind FsShowHome, Mode=OneWay}"
+                            ShowRefreshButton="{x:Bind FsShowRefresh, Mode=OneWay}"
+                            ShowSearchButton="{x:Bind FsShowSearch, Mode=OneWay}"
                             CanGoBack="{x:Bind FsCanGoBack, Mode=OneWay}"
                             BackButtonTooltip="Go back"
                             UpButtonTooltip="Parent folder"
@@ -46,6 +48,8 @@
                             BackRequested="FsBreadcrumb_BackRequested"
                             UpRequested="FsBreadcrumb_UpRequested"
                             HomeRequested="FsBreadcrumb_HomeRequested"
+                            RefreshRequested="FsBreadcrumb_RefreshRequested"
+                            SearchRequested="FsBreadcrumb_SearchRequested"
                             PathSubmitted="FsBreadcrumb_PathSubmitted"
                             ContextMenuItemClicked="FsBreadcrumb_ContextMenuItemClicked">
                             <ctrl:BetterBreadcrumbBar.LeadingIcon>
@@ -71,6 +75,10 @@
                                               IsChecked="{x:Bind FsShowUp, Mode=TwoWay}"/>
                                     <CheckBox Content="Home button"
                                               IsChecked="{x:Bind FsShowHome, Mode=TwoWay}"/>
+                                    <CheckBox Content="Refresh button"
+                                              IsChecked="{x:Bind FsShowRefresh, Mode=TwoWay}"/>
+                                    <CheckBox Content="Search button"
+                                              IsChecked="{x:Bind FsShowSearch, Mode=TwoWay}"/>
                                     <CheckBox Content="Leading icon"
                                               IsChecked="{x:Bind FsShowIcon, Mode=TwoWay}"
                                               Checked="FsIconToggle_Checked"
@@ -130,6 +138,8 @@
                             ShowBackButton="{x:Bind ZipShowBack, Mode=OneWay}"
                             ShowUpButton="{x:Bind ZipShowUp, Mode=OneWay}"
                             ShowHomeButton="{x:Bind ZipShowHome, Mode=OneWay}"
+                            ShowRefreshButton="{x:Bind ZipShowRefresh, Mode=OneWay}"
+                            ShowSearchButton="{x:Bind ZipShowSearch, Mode=OneWay}"
                             CanGoBack="{x:Bind ZipCanGoBack, Mode=OneWay}"
                             BackButtonTooltip="Go back"
                             UpButtonTooltip="Parent folder"
@@ -139,6 +149,8 @@
                             BackRequested="ZipBreadcrumb_BackRequested"
                             UpRequested="ZipBreadcrumb_UpRequested"
                             HomeRequested="ZipBreadcrumb_HomeRequested"
+                            RefreshRequested="ZipBreadcrumb_RefreshRequested"
+                            SearchRequested="ZipBreadcrumb_SearchRequested"
                             PathSubmitted="ZipBreadcrumb_PathSubmitted"
                             ContextMenuItemClicked="ZipBreadcrumb_ContextMenuItemClicked">
                             <ctrl:BetterBreadcrumbBar.LeadingIcon>
@@ -164,6 +176,10 @@
                                               IsChecked="{x:Bind ZipShowUp, Mode=TwoWay}"/>
                                     <CheckBox Content="Home button"
                                               IsChecked="{x:Bind ZipShowHome, Mode=TwoWay}"/>
+                                    <CheckBox Content="Refresh button"
+                                              IsChecked="{x:Bind ZipShowRefresh, Mode=TwoWay}"/>
+                                    <CheckBox Content="Search button"
+                                              IsChecked="{x:Bind ZipShowSearch, Mode=TwoWay}"/>
                                     <CheckBox Content="Leading icon"
                                               IsChecked="{x:Bind ZipShowIcon, Mode=TwoWay}"
                                               Checked="ZipIconToggle_Checked"

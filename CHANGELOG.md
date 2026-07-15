@@ -4,6 +4,13 @@ All notable changes to **BetterBreadcrumbBar for WinUI 3** are documented here.
 
 ---
 
+## [0.9.6]
+
+### Added
+- Optional Refresh button through `ShowRefreshButton`, `RefreshButtonTooltip`, and `RefreshRequested`.
+- Optional trailing Search button through `ShowSearchButton`, `SearchButtonTooltip`, and `SearchRequested`.
+- Demo toggles and event logging for both buttons.
+
 ## [0.9.5]
 
 ### Fixed

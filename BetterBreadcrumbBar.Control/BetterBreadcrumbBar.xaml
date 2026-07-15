@@ -2,7 +2,7 @@
 <!--
     BetterBreadcrumbBar for WinUI 3
     Author:  Matteo Riso
-    Version: 0.9.5
+    Version: 0.9.6
     Website: https://zipgenius.it
     Written with Claude AI
     License: MIT
@@ -265,7 +265,7 @@
         Height="36"
         PointerPressed="RootBorder_PointerPressed">
 
-        <Grid>
+        <Grid ColumnDefinitions="*,Auto">
 
             <!-- ── Main horizontal layout ── -->
             <StackPanel x:Name="NormalView"
@@ -306,6 +306,14 @@
                         Visibility="Collapsed"
                         Click="HomeButton_Click">
                         <FontIcon Glyph="&#xE80F;" FontSize="12"/>
+                    </Button>
+
+                    <Button
+                        x:Name="RefreshButton"
+                        Style="{StaticResource NavIconButtonStyle}"
+                        Visibility="Collapsed"
+                        Click="RefreshButton_Click">
+                        <FontIcon Glyph="&#xE72C;" FontSize="12"/>
                     </Button>
 
                 </StackPanel>
@@ -369,6 +377,16 @@
 
             </StackPanel>
 
+            <Button
+                x:Name="SearchButton"
+                Grid.Column="1"
+                Style="{StaticResource NavIconButtonStyle}"
+                VerticalAlignment="Center"
+                Visibility="Collapsed"
+                Click="SearchButton_Click">
+                <FontIcon Glyph="&#xE721;" FontSize="12"/>
+            </Button>
+
             <!-- ── Inline editing overlay ──
                  Visible only when the user clicks the empty area of the bar.
                  AutoSuggestBox fills the full width; Enter/Escape dismisses it;
@@ -376,6 +394,7 @@
             -->
             <AutoSuggestBox
                 x:Name="InlineAddressBox"
+                Grid.ColumnSpan="2"
                 Visibility="Collapsed"
                 VerticalAlignment="Center"
                 HorizontalAlignment="Stretch"

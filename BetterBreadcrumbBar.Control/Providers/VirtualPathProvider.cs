@@ -1,7 +1,7 @@
 // =============================================================================
 // BetterBreadcrumbBar for WinUI 3
 // Author:  Matteo Riso
-// Version: 0.9.5
+// Version: 0.9.6
 // Website: https://zipgenius.it
 // Written with Claude AI
 // License: MIT

@@ -1,7 +1,7 @@
 // =============================================================================
 // BetterBreadcrumbBar for WinUI 3
 // Author:  Matteo Riso
-// Version: 0.9.5
+// Version: 0.9.6
 // Website: https://zipgenius.it
 // Written with Claude AI
 // License: MIT
@@ -141,6 +141,30 @@ public sealed partial class BetterBreadcrumbBar : UserControl
         set => SetValue(ShowHomeButtonProperty, value);
     }
 
+    public static readonly DependencyProperty ShowRefreshButtonProperty =
+        DependencyProperty.Register(nameof(ShowRefreshButton), typeof(bool),
+            typeof(BetterBreadcrumbBar),
+            new PropertyMetadata(false, OnNavButtonVisibilityChanged));
+
+    /// <summary>Shows the optional Refresh button. Default: <c>false</c>.</summary>
+    public bool ShowRefreshButton
+    {
+        get => (bool)GetValue(ShowRefreshButtonProperty);
+        set => SetValue(ShowRefreshButtonProperty, value);
+    }
+
+    public static readonly DependencyProperty ShowSearchButtonProperty =
+        DependencyProperty.Register(nameof(ShowSearchButton), typeof(bool),
+            typeof(BetterBreadcrumbBar),
+            new PropertyMetadata(false, OnNavButtonVisibilityChanged));
+
+    /// <summary>Shows the optional Search button at the trailing end of the bar. Default: <c>false</c>.</summary>
+    public bool ShowSearchButton
+    {
+        get => (bool)GetValue(ShowSearchButtonProperty);
+        set => SetValue(ShowSearchButtonProperty, value);
+    }
+
     private static void OnNavButtonVisibilityChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
     {
         if (d is BetterBreadcrumbBar bar) bar.UpdateNavButtonsArea();
@@ -183,6 +207,26 @@ public sealed partial class BetterBreadcrumbBar : UserControl
     {
         get => (string)GetValue(HomeButtonTooltipProperty);
         set => SetValue(HomeButtonTooltipProperty, value);
+    }
+
+    public static readonly DependencyProperty RefreshButtonTooltipProperty =
+        DependencyProperty.Register(nameof(RefreshButtonTooltip), typeof(string),
+            typeof(BetterBreadcrumbBar), new PropertyMetadata("Refresh", OnNavTooltipChanged));
+
+    public string RefreshButtonTooltip
+    {
+        get => (string)GetValue(RefreshButtonTooltipProperty);
+        set => SetValue(RefreshButtonTooltipProperty, value);
+    }
+
+    public static readonly DependencyProperty SearchButtonTooltipProperty =
+        DependencyProperty.Register(nameof(SearchButtonTooltip), typeof(string),
+            typeof(BetterBreadcrumbBar), new PropertyMetadata("Search", OnNavTooltipChanged));
+
+    public string SearchButtonTooltip
+    {
+        get => (string)GetValue(SearchButtonTooltipProperty);
+        set => SetValue(SearchButtonTooltipProperty, value);
     }
 
     private static void OnNavTooltipChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
@@ -355,6 +399,12 @@ public sealed partial class BetterBreadcrumbBar : UserControl
 
     /// <summary>Raised when the Home button is clicked.</summary>
     public event EventHandler? HomeRequested;
+
+    /// <summary>Raised when the optional Refresh button is clicked.</summary>
+    public event EventHandler? RefreshRequested;
+
+    /// <summary>Raised when the optional trailing Search button is clicked.</summary>
+    public event EventHandler? SearchRequested;
 
     /// <summary>
     /// Raised when the user confirms a path in the inline address bar (Enter or suggestion chosen).
@@ -575,7 +625,7 @@ public sealed partial class BetterBreadcrumbBar : UserControl
     {
         if (_segments.Count == 0) { ApplyOverflow(0); return; }
 
-        double totalWidth = ActualWidth;
+        double totalWidth = NormalView.ActualWidth;
         if (totalWidth <= 0) return;
 
         // Cache chrome width — it only changes when nav buttons or icon are toggled,
@@ -883,10 +933,12 @@ public sealed partial class BetterBreadcrumbBar : UserControl
 
     private void UpdateNavButtonsArea()
     {
-        bool any = ShowBackButton || ShowUpButton || ShowHomeButton;
+        bool any = ShowBackButton || ShowUpButton || ShowHomeButton || ShowRefreshButton;
         BackButton.Visibility      = ShowBackButton ? Visibility.Visible : Visibility.Collapsed;
         UpButton.Visibility        = ShowUpButton   ? Visibility.Visible : Visibility.Collapsed;
         HomeButton.Visibility      = ShowHomeButton ? Visibility.Visible : Visibility.Collapsed;
+        RefreshButton.Visibility   = ShowRefreshButton ? Visibility.Visible : Visibility.Collapsed;
+        SearchButton.Visibility    = ShowSearchButton ? Visibility.Visible : Visibility.Collapsed;
         NavButtonsPanel.Visibility = any ? Visibility.Visible : Visibility.Collapsed;
         NavSeparator.Visibility    = any ? Visibility.Visible : Visibility.Collapsed;
         _chromeWidthCache = -1; // chrome changed — recompute on next overflow pass
@@ -908,6 +960,8 @@ public sealed partial class BetterBreadcrumbBar : UserControl
         ToolTipService.SetToolTip(BackButton, BackButtonTooltip);
         ToolTipService.SetToolTip(UpButton,   UpButtonTooltip);
         ToolTipService.SetToolTip(HomeButton, HomeButtonTooltip);
+        ToolTipService.SetToolTip(RefreshButton, RefreshButtonTooltip);
+        ToolTipService.SetToolTip(SearchButton, SearchButtonTooltip);
     }
 
     /// <summary>
@@ -1286,6 +1340,12 @@ public sealed partial class BetterBreadcrumbBar : UserControl
 
     private void HomeButton_Click(object sender, RoutedEventArgs e)
         => HomeRequested?.Invoke(this, EventArgs.Empty);
+
+    private void RefreshButton_Click(object sender, RoutedEventArgs e)
+        => RefreshRequested?.Invoke(this, EventArgs.Empty);
+
+    private void SearchButton_Click(object sender, RoutedEventArgs e)
+        => SearchRequested?.Invoke(this, EventArgs.Empty);
 }
 
 /// <summary>Event arguments carrying a <see cref="PathNode"/>.</summary>

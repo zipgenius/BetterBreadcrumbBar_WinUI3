@@ -42,6 +42,12 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
     private bool _fsShowHome = true;
     public bool FsShowHome { get => _fsShowHome; set => Set(ref _fsShowHome, value); }
 
+    private bool _fsShowRefresh = true;
+    public bool FsShowRefresh { get => _fsShowRefresh; set => Set(ref _fsShowRefresh, value); }
+
+    private bool _fsShowSearch = true;
+    public bool FsShowSearch { get => _fsShowSearch; set => Set(ref _fsShowSearch, value); }
+
     private bool _fsShowIcon = true;
     public bool FsShowIcon { get => _fsShowIcon; set => Set(ref _fsShowIcon, value); }
 
@@ -63,6 +69,12 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
 
     private bool _zipShowHome = true;
     public bool ZipShowHome { get => _zipShowHome; set => Set(ref _zipShowHome, value); }
+
+    private bool _zipShowRefresh = true;
+    public bool ZipShowRefresh { get => _zipShowRefresh; set => Set(ref _zipShowRefresh, value); }
+
+    private bool _zipShowSearch = true;
+    public bool ZipShowSearch { get => _zipShowSearch; set => Set(ref _zipShowSearch, value); }
 
     private bool _zipShowIcon = true;
     public bool ZipShowIcon { get => _zipShowIcon; set => Set(ref _zipShowIcon, value); }
@@ -184,6 +196,13 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
         Log(FsEventLog, @"[Home] → C:\Users");
         NavigateFilesystem(@"C:\Users");
     }
+    private void FsBreadcrumb_RefreshRequested(object s, EventArgs e)
+    {
+        Log(FsEventLog, $"[Refresh] {_fsCurrentPath}");
+        NavigateFilesystem(_fsCurrentPath, push: false);
+    }
+    private void FsBreadcrumb_SearchRequested(object s, EventArgs e)
+        => Log(FsEventLog, $"[Search] {_fsCurrentPath}");
     private async void FsBreadcrumb_ContextMenuItemClicked(object s, BreadcrumbContextMenuItemClickedEventArgs e)
     {
         if (e.IsCopyPath)
@@ -259,6 +278,13 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
         Log(ZipEventLog, "[Home] → (root)");
         NavigateZip("");
     }
+    private void ZipBreadcrumb_RefreshRequested(object s, EventArgs e)
+    {
+        Log(ZipEventLog, $"[Refresh] {(_zipCurrentPath == "" ? "(root)" : _zipCurrentPath)}");
+        NavigateZip(_zipCurrentPath, push: false);
+    }
+    private void ZipBreadcrumb_SearchRequested(object s, EventArgs e)
+        => Log(ZipEventLog, $"[Search] {(_zipCurrentPath == "" ? "(root)" : _zipCurrentPath)}");
     private async void ZipBreadcrumb_ContextMenuItemClicked(object s, BreadcrumbContextMenuItemClickedEventArgs e)
     {
         if (e.IsCopyPath)

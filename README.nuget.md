@@ -1,7 +1,7 @@
 # BetterBreadcrumbBar for WinUI 3
 
 **Author:** Matteo Riso — [zipgenius.it](https://zipgenius.it)
-**Version:** 0.8.0 · Written with Claude AI · [MIT License](LICENSE)
+**Version:** 0.9.6 · Written with Claude AI · [MIT License](LICENSE)
 
 A Windows-Explorer-style breadcrumb navigation bar for **WinUI 3 / Windows App SDK**.
 
@@ -14,6 +14,8 @@ A Windows-Explorer-style breadcrumb navigation bar for **WinUI 3 / Windows App S
 | Optional last-segment chevron | `ShowLastSegmentChevron` |
 | Optional leading icon (`SymbolIcon`, `FontIcon`, …) | `LeadingIcon` |
 | Optional Back / Up / Home buttons | `ShowBackButton`, `ShowUpButton`, `ShowHomeButton` |
+| Optional Refresh button | `ShowRefreshButton`, `RefreshRequested` |
+| Optional trailing Search button | `ShowSearchButton`, `SearchRequested` |
 | Customisable button tooltips | `BackButtonTooltip`, `UpButtonTooltip`, `HomeButtonTooltip` |
 | Bar tooltip shows current path | `CurrentPath` (read-only DP) |
 | Inline address bar with autocomplete | `PathSubmitted`, `IPathProvider.GetSuggestionsAsync` |
@@ -39,13 +41,17 @@ xmlns:ctrl="using:BetterBreadcrumbBar.Control"
     ShowBackButton="True"
     ShowUpButton="True"
     ShowHomeButton="True"
+    ShowRefreshButton="True"
+    ShowSearchButton="True"
     CanGoBack="{x:Bind CanGoBack, Mode=OneWay}"
     SegmentClicked="OnSegmentClicked"
     NodeSelected="OnNodeSelected"
     PathSubmitted="OnPathSubmitted"
     BackRequested="OnBackRequested"
     UpRequested="OnUpRequested"
-    HomeRequested="OnHomeRequested"/>
+    HomeRequested="OnHomeRequested"
+    RefreshRequested="OnRefreshRequested"
+    SearchRequested="OnSearchRequested"/>
 ```
 
 ```csharp

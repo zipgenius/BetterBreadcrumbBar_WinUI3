@@ -2,7 +2,7 @@
 
 A Windows-Explorer-style breadcrumb navigation bar for **WinUI 3 / Windows App SDK**.
 
-![Version](https://img.shields.io/badge/version-0.9.5-blue)
+![Version](https://img.shields.io/badge/version-0.9.6-blue)
 ![NuGet](https://img.shields.io/nuget/v/BetterBreadcrumbBar.WinUI3)
 ![License](https://img.shields.io/badge/license-MIT-green)
 ![Platform](https://img.shields.io/badge/platform-Windows%2010%2B-lightgrey)
@@ -19,6 +19,8 @@ https://github.com/user-attachments/assets/b79f1ed0-f39f-47b1-888b-8c86d8ebfbe2
 - **Overflow management** — when the bar is too narrow to display all segments, a `…` button appears on the left and opens a flyout with the hidden leading segments
 - **Right-click context menu** — right-clicking anywhere on the bar (segments, chevrons, leading icon, overflow button, nav buttons, or any empty area between elements) opens a context menu; the `Node` in the event args reflects the specific element clicked — the segment node, the parent node for chevrons, or the current (last) node for empty areas and nav buttons; two built-in items (*Copy path as text* and *Paste and go*) are always present and label texts are fully localisable
 - **Optional navigation buttons** — Back, Up, and Home buttons can be shown individually, each with a customisable tooltip
+- **Optional Refresh button** — raises `RefreshRequested` so the host can reload the current location
+- **Optional trailing Search button** — always appears at the end of the bar and raises `SearchRequested`
 - **Optional leading icon** — accepts any `IconElement` subclass (`SymbolIcon`, `FontIcon`, `BitmapIcon`, `PathIcon`, …)
 - **Full typography support** — `FontFamily`, `FontSize`, `FontWeight`, `FontStyle`, `FontStretch`, `Foreground`, and `CharacterSpacing` are all live-updatable and propagated correctly to every segment button, bypassing WinUI 3's theme override mechanism
 - **Right-to-left layout** — set `FlowDirection="RightToLeft"` and the bar layout, chevron glyphs, and flyout placement all adapt automatically; the inline address box stays LTR so file paths always read correctly
@@ -56,6 +58,8 @@ xmlns:bbb="using:BetterBreadcrumbBar.Control"
     ShowBackButton="True"
     ShowUpButton="True"
     ShowHomeButton="True"
+    ShowRefreshButton="True"
+    ShowSearchButton="True"
     CanGoBack="{x:Bind CanGoBack, Mode=OneWay}"
     SegmentClicked="Breadcrumb_SegmentClicked"
     NodeSelected="Breadcrumb_NodeSelected"
@@ -63,6 +67,8 @@ xmlns:bbb="using:BetterBreadcrumbBar.Control"
     BackRequested="Breadcrumb_BackRequested"
     UpRequested="Breadcrumb_UpRequested"
     HomeRequested="Breadcrumb_HomeRequested"
+    RefreshRequested="Breadcrumb_RefreshRequested"
+    SearchRequested="Breadcrumb_SearchRequested"
     ContextMenuItemClicked="Breadcrumb_ContextMenuItemClicked">
     <bbb:BetterBreadcrumbBar.LeadingIcon>
         <SymbolIcon Symbol="Folder"/>
@@ -407,9 +413,13 @@ private async void Breadcrumb_ContextMenuItemClicked(
 | `ShowBackButton` | `bool` | `false` | Shows the Back (←) navigation button |
 | `ShowUpButton` | `bool` | `false` | Shows the Up (↑) navigation button |
 | `ShowHomeButton` | `bool` | `false` | Shows the Home button |
+| `ShowRefreshButton` | `bool` | `false` | Shows the Refresh button with the navigation controls |
+| `ShowSearchButton` | `bool` | `false` | Shows the Search button at the trailing end of the bar |
 | `BackButtonTooltip` | `string` | `"Back"` | Tooltip for the Back button |
 | `UpButtonTooltip` | `string` | `"Up — parent folder"` | Tooltip for the Up button |
 | `HomeButtonTooltip` | `string` | `"Home"` | Tooltip for the Home button |
+| `RefreshButtonTooltip` | `string` | `"Refresh"` | Tooltip for the Refresh button |
+| `SearchButtonTooltip` | `string` | `"Search"` | Tooltip for the Search button |
 | `CurrentPath` | `string` | `""` | Read-only. Full path of the current node. Also shown as bar tooltip. |
 | `CanGoBack` | `bool` | `false` | Set by the host to enable or disable the Back button |
 | `CanGoUp` | `bool` | computed | Read-only. `true` when the path has at least two segments |
@@ -430,6 +440,8 @@ All standard `Control` typography properties (`FontFamily`, `FontSize`, `FontWei
 | `BackRequested` | `EventArgs` | Back button clicked |
 | `UpRequested` | `PathNodeEventArgs` | Up button clicked; `Node` is the parent |
 | `HomeRequested` | `EventArgs` | Home button clicked |
+| `RefreshRequested` | `EventArgs` | Refresh button clicked |
+| `SearchRequested` | `EventArgs` | Search button clicked |
 | `ContextMenuItemClicked` | `BreadcrumbContextMenuItemClickedEventArgs` | Any context menu item clicked (built-in or custom) |
 
 ### Methods
